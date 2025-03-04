@@ -1,9 +1,10 @@
 "use client";
 
-import { Canvas } from "@react-three/fiber";
-import { Environment, useGLTF } from "@react-three/drei";
+import { Canvas, useThree } from "@react-three/fiber";
+import { Environment, OrbitControls, useGLTF } from "@react-three/drei";
 import { Suspense, useEffect, useState } from "react";
-import { Group, Mesh } from "three";
+import { Group, Mesh, WebGLRenderer } from "three";
+import { VRButton } from "three/examples/jsm/webxr/VRButton.js";
 
 function Model() {
   const { scene } = useGLTF("/models/untitled.glb") as { scene: Group };
@@ -31,10 +32,12 @@ function Model() {
 
   return (
     <>
+      {/* ✅ Lowercase light elements to avoid TypeScript errors */}
       <ambientLight intensity={1} />
       <directionalLight position={[-5, -15, -5]} intensity={1} />
-      <directionalLight position={[5, 15, 5]} intensity={2} />
+      <directionalLight position={[15, 5, 5]} intensity={2} />
       <pointLight position={[0, 5, 1]} intensity={10} />
+
       <primitive
         object={scene}
         scale={1.6}
@@ -43,6 +46,24 @@ function Model() {
       />
     </>
   );
+}
+
+function VRSetup() {
+  const { gl } = useThree();
+
+  useEffect(() => {
+    const renderer = gl as WebGLRenderer;
+    renderer.xr.enabled = true;
+
+    const vrButton = VRButton.createButton(renderer);
+    document.body.appendChild(vrButton);
+
+    return () => {
+      document.body.removeChild(vrButton);
+    };
+  }, [gl]);
+
+  return null;
 }
 
 export default function ThreeModel() {
@@ -57,26 +78,28 @@ export default function ThreeModel() {
       }}
     >
       <div className="z-10 text-gray-500 absolute left-[20%] top-[30vh]">
-        <div className="text-8xl font-bold">kancoin</div>
+        <div className="text-[10vmin] font-bold">kancoin</div>
         <div className="">A digital currency for the future</div>
       </div>
 
       <Canvas
         camera={{
-          position: [50, -10, 0],
-          fov: 15,
+          position: [50, -5, 20],
+          fov: 12,
           near: 20,
-          far: 100,
-          focus: 100,
+          far: 80,
         }}
-        gl={{ toneMappingExposure: 0.5 }}
+        gl={{ toneMappingExposure: 1.5 }}
       >
-        <Environment preset="studio" background blur={0.1} />
+        <VRSetup />
+        <Environment files={"/bg.jpg"} background blur={0.1} />
 
-        <Suspense fallback={null}>
+        <Suspense fallback={"loading.."}>
           <Model />
         </Suspense>
-        {/* <OrbitControls enableZoom={true} /> */}
+
+        {/* Disable OrbitControls in VR mode */}
+        <OrbitControls enableZoom={true} />
       </Canvas>
     </div>
   );
